@@ -46,12 +46,14 @@ async function getBasicVideoInfo(videoId) {
 
 router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   const videoId = ctx.params.videoId;
+  ctx.set("access-control-allow-origin", "*");
 
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
       throw ("The video can't be played.");
     }
+    ctx.set("content-type", "application/dash+xml");
     ctx.body = basicVideoInfo.streaming_data.dashFile;
   } catch (error) {
     ctx.status = 400;
@@ -62,6 +64,7 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
 router.get('/latest_version', async (ctx, next) => {
   const videoId = ctx.query.id;
   const itagId = ctx.query.itag;
+  ctx.set("access-control-allow-origin", "*");
 
   if (!videoId || !itagId) {
     return ctx.body = "Please specify the itag and video ID";
