@@ -1,25 +1,28 @@
 import Koa from 'koa';
 import pkg from 'youtubei.js';
 const { Innertube, UniversalCache } = pkg;
+import Keyv from 'keyv';
 const app = new Koa();
 import Router from '@koa/router';
 
 const router = new Router();
-const youtube = await Innertube.create({
-  cache: new UniversalCache(
-    true,
-    './.cache'
-  )
-});
+const youtube = await Innertube.create();
 
 const hostproxy = process.env.HOST_PROXY;
 
+const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined);
+const timeExpireCache = 1000 * 60 * 60 * 1;
+
 async function getBasicVideoInfo(videoId) {
-  let basicVideoInfo;
+  let basicVideoInfo = await keyv.get(videoId);
+
+  if (basicVideoInfo)
+    return basicVideoInfo;
 
   try {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
+    await keyv.set(videoId, {playability_status: {status: "The video can't be played."}}, timeExpireCache);
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   }
 
@@ -31,6 +34,8 @@ async function getBasicVideoInfo(videoId) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
       .filter(i => i.mime_type.includes("audio/mp4" | "video/mp4"));
   }
+
+  await keyv.set(videoId, basicVideoInfo, timeExpireCache);
 
   return basicVideoInfo;
 }
