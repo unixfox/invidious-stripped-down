@@ -4,6 +4,9 @@ const { Innertube, UniversalCache } = pkg;
 import Keyv from 'keyv';
 const app = new Koa();
 import Router from '@koa/router';
+import dns from 'dns';
+
+dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
 const router = new Router();
 const youtube = await Innertube.create();
