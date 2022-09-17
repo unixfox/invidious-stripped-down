@@ -12,6 +12,8 @@ const youtube = await Innertube.create({
   )
 });
 
+const hostproxy = process.env.HOST_PROXY;
+
 async function getBasicVideoInfo(videoId) {
   let basicVideoInfo;
 
@@ -38,7 +40,10 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
 
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
-    ctx.body = basicVideoInfo.toDash();
+    ctx.body = basicVideoInfo.toDash((url) => {
+      url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
+      return url;
+    });
     if (basicVideoInfo.playability_status.status !== "OK") {
       throw ("The video can't be played.");
     }
@@ -66,7 +71,9 @@ router.get('/latest_version', async (ctx, next) => {
       ctx.status = 400;
       return ctx.body = "No itag found.";
     }
-    ctx.redirect(selectedItagFormats[0].url)
+    let urlToRedirect = new URL(selectedItagFormats[0].url);
+    urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
+    ctx.redirect(urlToRedirect)
   } catch (error) {
     ctx.status = 400;
     return ctx.body = "The video can't be played.";
@@ -77,4 +84,4 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
-app.listen(process.env.BIND_ADDRESS || "0.0.0.0:3000");
+app.listen(process.env.BIND_PORT || "3000", process.env.BIND_ADDRESS || "0.0.0.0");
