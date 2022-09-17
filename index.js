@@ -34,7 +34,6 @@ async function getBasicVideoInfo(videoId) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
       .filter(i => i.mime_type.includes("audio/mp4" | "video/mp4"));
     basicVideoInfo.streaming_data.dashFile = basicVideoInfo.toDash((url) => {
-      url.searchParams.append("host", url.host);
       url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
       return url;
     });
@@ -82,7 +81,6 @@ router.get('/latest_version', async (ctx, next) => {
       return ctx.body = "No itag found.";
     }
     let urlToRedirect = new URL(selectedItagFormats[0].url);
-    urlToRedirect.searchParams.append("host", urlToRedirect.host);
     urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
     ctx.redirect(urlToRedirect)
   } catch (error) {
