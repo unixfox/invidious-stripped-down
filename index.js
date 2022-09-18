@@ -37,29 +37,30 @@ async function getBasicVideoInfo(videoId) {
   if (basicVideoInfo.streaming_data) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
       .filter(i => i.mime_type.includes("audio/mp4" | "video/mp4"));
+
+    let adaptive_formats = [];
+    let formats = [];
+  
+    for (let format of basicVideoInfo.streaming_data.adaptive_formats) {
+      if (format.signature_cipher)
+        format.url = format.decipher(youtube.session.player)
+      adaptive_formats.push(format);
+    }
+
+    for (let format of basicVideoInfo.streaming_data.formats) {
+      if (format.signature_cipher)
+        format.url = format.decipher(youtube.session.player)
+      formats.push(format);
+    }
+  
+    basicVideoInfo.streaming_data.adaptive_formats = adaptive_formats;
+    basicVideoInfo.streaming_data.formats = formats;
+    
     basicVideoInfo.streaming_data.dashFile = basicVideoInfo.toDash((url) => {
       url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
       return url;
     });
   }
-
-  let adaptive_formats = [];
-  let formats = [];
-
-  for (let format of basicVideoInfo.streaming_data.adaptive_formats) {
-    if (format.signature_cipher)
-      format.url = format.decipher(youtube.session.player)
-    adaptive_formats.push(format);
-  }
-
-  for (let format of basicVideoInfo.streaming_data.formats) {
-    if (format.signature_cipher)
-      format.url = format.decipher(youtube.session.player)
-    adaptive_formats.push(format);
-  }
-
-  basicVideoInfo.streaming_data.adaptive_formats = adaptive_formats;
-  basicVideoInfo.streaming_data.formats = formats;
 
   await keyv.set(videoId, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
 
