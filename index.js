@@ -26,7 +26,7 @@ async function getBasicVideoInfo(videoId) {
   try {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
-    await keyv.set(videoId, { playability_status: { status: "The video can't be played." } }, timeExpireCache);
+    await keyv.set(videoId, { playability_status: { status: "The video can't be played: " + videoId } }, timeExpireCache);
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   }
 
@@ -55,13 +55,13 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played.");
+      throw ("The video can't be played: " + videoId);
     }
     ctx.set("content-type", "application/dash+xml");
     ctx.body = basicVideoInfo.streaming_data.dashFile;
   } catch (error) {
     ctx.status = 400;
-    return ctx.body = "The video can't be played.";
+    return ctx.body = "The video can't be played: " + videoId;
   }
 });
 
@@ -77,7 +77,7 @@ router.get('/latest_version', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played.");
+      throw ("The video can't be played: " + videoId);
     }
     const selectedItagFormats = basicVideoInfo.streaming_data.formats.filter(i => i.itag == itagId);
     if (selectedItagFormats.length === 0) {
@@ -90,7 +90,7 @@ router.get('/latest_version', async (ctx, next) => {
   } catch (error) {
     console.log(error)
     ctx.status = 400;
-    return ctx.body = "The video can't be played.";
+    return ctx.body = "The video can't be played: " + videoId;
   }
 });
 
