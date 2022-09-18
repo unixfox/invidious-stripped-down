@@ -5,6 +5,7 @@ import Keyv from 'keyv';
 const app = new Koa();
 import Router from '@koa/router';
 import dns from 'dns';
+import KeyvGzip from '@keyv/compress-gzip';
 
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
@@ -13,7 +14,8 @@ const youtube = await Innertube.create();
 
 const hostproxy = process.env.HOST_PROXY;
 
-const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined);
+const keyvGzip = new KeyvGzip();
+const keyv = new Keyv({ compression: keyvGzip, adapter: process.env.KEYV_ADDRESS || undefined });
 const timeExpireCache = 1000 * 60 * 60 * 1;
 
 async function getBasicVideoInfo(videoId) {
@@ -29,9 +31,9 @@ async function getBasicVideoInfo(videoId) {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   }
 
-  //if (basicVideoInfo.playability_status.reason) {
-  //  basicVideoInfo = await youtube.getBasicInfo(videoId, 'TVHTML5_SIMPLY_EMBEDDED_PLAYER');
-  //}
+  if (basicVideoInfo.playability_status.reason) {
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'TVHTML5_SIMPLY_EMBEDDED_PLAYER');
+  }
 
   if (basicVideoInfo.streaming_data) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
@@ -42,7 +44,7 @@ async function getBasicVideoInfo(videoId) {
     });
   }
 
-  await keyv.set(videoId, basicVideoInfo, timeExpireCache);
+  await keyv.set(videoId, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
 
   return basicVideoInfo;
 }

@@ -19,9 +19,10 @@
   },
   "homepage": "https://github.com/unixfox/invidious-stripped-down#readme",
   "dependencies": {
+    "@keyv/compress-gzip": "^1.0.1",
     "@koa/router": "^12.0.0",
     "keyv": "^4.5.0",
     "koa": "^2.13.4",
-    "youtubei.js": "^2.1.0"
+    "youtubei.js": "^2.2.1"
   }
 }
