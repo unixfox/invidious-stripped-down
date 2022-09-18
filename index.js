@@ -26,7 +26,12 @@ async function getBasicVideoInfo(videoId) {
   try {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
-    await keyv.set(videoId, { playability_status: { status: "The video can't be played: " + videoId } }, timeExpireCache);
+    await keyv.set(videoId, {
+      playability_status: {
+        status: "Not OK",
+        reason: "Video unavailable: " + videoId
+      }
+    }, timeExpireCache);
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   }
 
@@ -37,7 +42,7 @@ async function getBasicVideoInfo(videoId) {
   if (basicVideoInfo.streaming_data) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
       .filter(i => i.mime_type.includes("audio/mp4" | "video/mp4"));
-    
+
     basicVideoInfo.streaming_data.dashFile = basicVideoInfo.toDash((url) => {
       url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
       return url;
@@ -64,13 +69,13 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played: " + videoId);
+      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason)
     }
     ctx.set("content-type", "application/dash+xml");
     ctx.body = basicVideoInfo.streaming_data.dashFile;
   } catch (error) {
     ctx.status = 400;
-    return ctx.body = "The video can't be played: " + videoId;
+    return ctx.body = error;
   }
 });
 
@@ -86,7 +91,7 @@ router.get('/latest_version', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played: " + videoId);
+      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason);
     }
     const selectedItagFormats = basicVideoInfo.streaming_data.formats.filter(i => i.itag == itagId);
     if (selectedItagFormats.length === 0) {
@@ -102,7 +107,7 @@ router.get('/latest_version', async (ctx, next) => {
   } catch (error) {
     console.log(error)
     ctx.status = 400;
-    return ctx.body = "The video can't be played: " + videoId;
+    return ctx.body = error;
   }
 });
 
