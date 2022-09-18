@@ -43,6 +43,24 @@ async function getBasicVideoInfo(videoId) {
     });
   }
 
+  let adaptive_formats = [];
+  let formats = [];
+
+  for (let format of basicVideoInfo.streaming_data.adaptive_formats) {
+    if (format.signature_cipher)
+      format.url = format.decipher(youtube.session.player)
+    adaptive_formats.push(format);
+  }
+
+  for (let format of basicVideoInfo.streaming_data.formats) {
+    if (format.signature_cipher)
+      format.url = format.decipher(youtube.session.player)
+    formats.push(format);
+  }
+
+  basicVideoInfo.streaming_data.adaptive_formats = adaptive_formats;
+  basicVideoInfo.streaming_data.formats = formats;
+
   await keyv.set(videoId, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
 
   return basicVideoInfo;
