@@ -6,6 +6,7 @@ const app = new Koa();
 import Router from '@koa/router';
 import dns from 'dns';
 import KeyvBrotli from '@keyv/compress-brotli';
+import QuickLRU from 'quick-lru';
 
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
@@ -14,7 +15,8 @@ const youtube = await Innertube.create();
 
 const hostproxy = process.env.HOST_PROXY;
 
-const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli() });
+const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000 });
+const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli(), store: lru });
 const timeExpireCache = 1000 * 60 * 60 * 1;
 
 async function getBasicVideoInfo(videoId) {
