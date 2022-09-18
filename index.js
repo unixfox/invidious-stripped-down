@@ -84,6 +84,9 @@ router.get('/latest_version', async (ctx, next) => {
       ctx.status = 400;
       return ctx.body = "No itag found.";
     }
+    if (selectedItagFormats[0].url) {
+      throw ("No URL, the video can't be played: " + videoId);
+    }
     let urlToRedirect = new URL(selectedItagFormats[0].url);
     urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
     ctx.redirect(urlToRedirect)
