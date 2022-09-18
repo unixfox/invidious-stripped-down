@@ -1,11 +1,11 @@
 import Koa from 'koa';
 import pkg from 'youtubei.js';
-const { Innertube, UniversalCache } = pkg;
+const { Innertube } = pkg;
 import Keyv from 'keyv';
 const app = new Koa();
 import Router from '@koa/router';
 import dns from 'dns';
-import KeyvGzip from '@keyv/compress-gzip';
+import KeyvBrotli from '@keyv/compress-brotli';
 
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
@@ -14,8 +14,7 @@ const youtube = await Innertube.create();
 
 const hostproxy = process.env.HOST_PROXY;
 
-const keyvGzip = new KeyvGzip();
-const keyv = new Keyv({ compression: keyvGzip, adapter: process.env.KEYV_ADDRESS || undefined });
+const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli() });
 const timeExpireCache = 1000 * 60 * 60 * 1;
 
 async function getBasicVideoInfo(videoId) {
@@ -32,7 +31,7 @@ async function getBasicVideoInfo(videoId) {
   }
 
   if (basicVideoInfo.playability_status.reason) {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'TVHTML5_SIMPLY_EMBEDDED_PLAYER');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
   }
 
   if (basicVideoInfo.streaming_data) {
@@ -89,6 +88,7 @@ router.get('/latest_version', async (ctx, next) => {
     urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
     ctx.redirect(urlToRedirect)
   } catch (error) {
+    console.log(error)
     ctx.status = 400;
     return ctx.body = "The video can't be played.";
   }
