@@ -55,7 +55,7 @@ async function getBasicVideoInfo(videoId) {
   for (let format of basicVideoInfo.streaming_data.formats) {
     if (format.signature_cipher)
       format.url = format.decipher(youtube.session.player)
-    formats.push(format);
+    adaptive_formats.push(format);
   }
 
   basicVideoInfo.streaming_data.adaptive_formats = adaptive_formats;
