@@ -1,0 +1,16 @@
+[Unit]
+Description=Invidious stripped down
+After=network.target
+
+[Service]
+Environment="HOST_PROXY=.c.eu3-proxy.yewtu.be"
+Environment="BIND_ADDRESS=127.0.0.1"
+Environment="DNS_ORDER=ipv4first"
+ExecStart=/usr/bin/node /opt/invidious-stripped-down/index.js
+User=nobody
+Group=nogroup
+Restart=on-failure
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target
