@@ -90,6 +90,11 @@ router.get('/latest_version', async (ctx, next) => {
     return ctx.body = "Please specify the itag and video ID";
   }
 
+  if (itagId > 100) {
+    ctx.status = 400;
+    return ctx.body = "Only handle non-DASH itags.";
+  }
+
   try {
     const basicVideoInfo = await getBasicVideoInfo(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
