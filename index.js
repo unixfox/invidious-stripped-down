@@ -19,8 +19,9 @@ const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000 });
 const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli(), store: lru });
 const timeExpireCache = 1000 * 60 * 60 * 1;
 
-async function getBasicVideoInfo(videoId) {
-  let basicVideoInfo = await keyv.get(videoId);
+async function getBasicVideoInfoDash(videoId) {
+  const keyvKey = videoId + "-dash";
+  let basicVideoInfo = await keyv.get(keyvKey);
 
   if (basicVideoInfo)
     return basicVideoInfo;
@@ -28,7 +29,7 @@ async function getBasicVideoInfo(videoId) {
   try {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
-    await keyv.set(videoId, {
+    await keyv.set(keyvKey, {
       playability_status: {
         status: "Not OK",
         reason: "Video unavailable: " + videoId
@@ -49,7 +50,37 @@ async function getBasicVideoInfo(videoId) {
       url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
       return url;
     });
+  }
 
+  await keyv.set(keyvKey, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
+
+  return basicVideoInfo;
+}
+
+async function getBasicVideoInfoLatestVersion(videoId) {
+  const keyvKey = videoId + "-latest";
+  let basicVideoInfo = await keyv.get(keyvKey);
+
+  if (basicVideoInfo)
+    return basicVideoInfo;
+
+  try {
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
+  } catch (error) {
+    await keyv.set(keyvKey, {
+      playability_status: {
+        status: "Not OK",
+        reason: "Video unavailable: " + videoId
+      }
+    }, timeExpireCache);
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+  }
+
+  if (basicVideoInfo.playability_status.reason) {
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
+  }
+
+  if (basicVideoInfo.streaming_data) {
     let formats = [];
     for (let format of basicVideoInfo.streaming_data.formats) {
       if (format.signature_cipher)
@@ -59,7 +90,7 @@ async function getBasicVideoInfo(videoId) {
     basicVideoInfo.streaming_data.formats = formats;
   }
 
-  await keyv.set(videoId, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
+  await keyv.set(keyvKey, (({ streaming_data, playability_status }) => ({ streaming_data, playability_status }))(basicVideoInfo), timeExpireCache);
 
   return basicVideoInfo;
 }
@@ -69,7 +100,7 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   ctx.set("access-control-allow-origin", "*");
 
   try {
-    const basicVideoInfo = await getBasicVideoInfo(videoId);
+    const basicVideoInfo = await getBasicVideoInfoDash(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
       throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason)
     }
@@ -96,7 +127,7 @@ router.get('/latest_version', async (ctx, next) => {
   }
 
   try {
-    const basicVideoInfo = await getBasicVideoInfo(videoId);
+    const basicVideoInfo = await getBasicVideoInfoLatestVersion(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
       throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason);
     }
