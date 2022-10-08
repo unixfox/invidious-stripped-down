@@ -118,22 +118,48 @@ router.get('/api/manifest/hls_variant/(.*)', async (ctx, next) => {
   ctx.set("access-control-allow-origin", "*");
   ctx.set("content-type", "application/x-mpegURL");
 
-  const finalUrl = ctx.request.url.split("?")[0];
+  const parseVideoId = ctx.request.url.split('/id/').pop().split('/')[0];
+  let videoId = "";
 
-  const {
-    statusCode,
-    body
-  } = await request('https://www.youtube.com' + finalUrl);
-
-  let bodyText = await body.text();
-
-  if (statusCode == 200) {
-    ctx.body = bodyText.replaceAll("www.youtube.com", hostname);
-    ctx.status = 200;
+  if (parseVideoId) {
+    videoId = parseVideoId.match(/\w+/m)[0];
+  }
+  else if (parseVideoId == null && ctx.request.query.id) {
+    videoId = ctx.request.query.id;
   }
   else {
-    ctx.body = body;
-    ctx.status = statusCode;
+    ctx.body = "Video ID not found.";
+    ctx.status = 400;
+    return;
+  }
+
+  try {
+    const basicVideoInfo = await getBasicVideoInfoLatestVersion(videoId);
+    if (basicVideoInfo.playability_status.status !== "OK") {
+      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason)
+    }
+
+    const hlsManifestUrl = basicVideoInfo.streaming_data.hls_manifest_url;
+
+    const {
+      statusCode,
+      body
+    } = await request('https://www.youtube.com' + (new URL(hlsManifestUrl)).pathname);
+  
+    let bodyText = await body.text();
+  
+    if (statusCode == 200) {
+      ctx.body = bodyText.replaceAll("www.youtube.com", hostname);
+      ctx.status = 200;
+    }
+    else {
+      ctx.body = body;
+      ctx.status = statusCode;
+    }
+
+  } catch (error) {
+    ctx.status = 400;
+    return ctx.body = error;
   }
 });
 
