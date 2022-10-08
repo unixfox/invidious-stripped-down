@@ -7,13 +7,15 @@ import Router from '@koa/router';
 import dns from 'dns';
 import KeyvBrotli from '@keyv/compress-brotli';
 import QuickLRU from 'quick-lru';
+import { request } from 'undici'
 
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
 const router = new Router();
 const youtube = await Innertube.create();
 
-const hostproxy = process.env.HOST_PROXY;
+const hostname = process.env.HOST_PROXY;
+const hostproxy = ".c." + hostname;
 
 const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000 });
 const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli(), store: lru });
@@ -109,6 +111,52 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   } catch (error) {
     ctx.status = 400;
     return ctx.body = error;
+  }
+});
+
+router.get('/api/manifest/hls_variant/(.*)', async (ctx, next) => {
+  ctx.set("access-control-allow-origin", "*");
+  ctx.set("content-type", "application/x-mpegURL");
+
+  const finalUrl = ctx.request.url.split("?")[0];
+
+  const {
+    statusCode,
+    body
+  } = await request('https://www.youtube.com' + finalUrl);
+
+  let bodyText = await body.text();
+
+  if (statusCode == 200) {
+    ctx.body = bodyText.replaceAll("www.youtube.com", hostname);
+    ctx.status = 200;
+  }
+  else {
+    ctx.body = body;
+    ctx.status = statusCode;
+  }
+});
+
+router.get('/api/manifest/hls_playlist/(.*)', async (ctx, next) => {
+  ctx.set("access-control-allow-origin", "*");
+  ctx.set("content-type", "application/x-mpegURL");
+
+  const finalUrl = ctx.request.url.split("?")[0];
+
+  const {
+    statusCode,
+    body
+  } = await request('https://www.youtube.com' + finalUrl);
+
+  let bodyText = await body.text();
+
+  if (statusCode == 200) {
+    ctx.body = bodyText.replaceAll("youtube.com", hostname);
+    ctx.status = 200;
+  }
+  else {
+    ctx.body = body;
+    ctx.status = statusCode;
   }
 });
 

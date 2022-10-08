@@ -24,6 +24,7 @@
     "keyv": "^4.5.0",
     "koa": "^2.13.4",
     "quick-lru": "^6.1.1",
-    "youtubei.js": "^2.2.2"
+    "youtubei.js": "^2.2.3",
+    "undici": "^5.7.0"
   }
 }
