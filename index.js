@@ -7,7 +7,8 @@ import Router from '@koa/router';
 import dns from 'dns';
 import KeyvBrotli from '@keyv/compress-brotli';
 import QuickLRU from 'quick-lru';
-import { request } from 'undici'
+import { request } from 'undici';
+import crypto from 'crypto';
 
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
@@ -16,6 +17,7 @@ const youtube = await Innertube.create();
 
 const hostname = process.env.HOST_PROXY;
 const hostproxy = ".c." + hostname;
+const hmac_key = process.env.HMAC_KEY;
 
 const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000 });
 const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { compression: new KeyvBrotli(), store: lru });
@@ -100,6 +102,13 @@ async function getBasicVideoInfoLatestVersion(videoId) {
 router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   const videoId = ctx.params.videoId;
   ctx.set("access-control-allow-origin", "*");
+
+  const hmac_key_computed = crypto.createHmac('sha1', hmac_key).update(videoId).digest('hex');
+
+  if (ctx.request.query.hmac_key != hmac_key_computed) {
+    ctx.status = 403;
+    return ctx.body = "Incorrect key";
+  }
 
   try {
     const basicVideoInfo = await getBasicVideoInfoDash(videoId);
@@ -190,6 +199,13 @@ router.get('/latest_version', async (ctx, next) => {
   const videoId = ctx.query.id;
   const itagId = ctx.query.itag;
   ctx.set("access-control-allow-origin", "*");
+
+  const hmac_key_computed = crypto.createHmac('sha1', hmac_key).update(videoId).digest('hex');
+
+  if (ctx.request.query.hmac_key != hmac_key_computed) {
+    ctx.status = 403;
+    return ctx.body = "Incorrect key";
+  }
 
   if (!videoId || !itagId) {
     return ctx.body = "Please specify the itag and video ID";
