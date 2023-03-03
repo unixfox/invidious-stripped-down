@@ -1,5 +1,5 @@
 import Koa from 'koa';
-const { Innertube } = require('youtubei.js');
+import { Innertube } from 'youtubei.js';
 import Keyv from 'keyv';
 const app = new Koa();
 import Router from '@koa/router';
