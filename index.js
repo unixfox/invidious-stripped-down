@@ -210,25 +210,22 @@ router.get('/latest_version', async (ctx, next) => {
     return ctx.body = "Please specify the itag and video ID";
   }
 
-  if (itagId > 100 && !(itagId >= 139 && itagId <= 141)) {
-    ctx.status = 400;
-    return ctx.body = "Only handle non-DASH itags.";
-  }
-
   try {
     const basicVideoInfo = await getBasicVideoInfoLatestVersion(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
       throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason);
     }
-    const selectedItagFormats = basicVideoInfo.streaming_data.formats.filter(i => i.itag == itagId);
-    if (selectedItagFormats.length === 0) {
+    const streamingData = basicVideoInfo.streaming_data;
+    const availableFormats = streamingData.formats.concat(streamingData.adaptive_formats);
+    const selectedItagFormat = availableFormats.filter(i => i.itag == itagId);
+    if (selectedItagFormat.length === 0) {
       ctx.status = 400;
       return ctx.body = "No itag found.";
     }
-    if (!selectedItagFormats[0].url) {
+    if (!selectedItagFormat[0].url) {
       throw ("No URL, the video can't be played: " + videoId);
     }
-    let urlToRedirect = new URL(selectedItagFormats[0].url);
+    let urlToRedirect = new URL(selectedItagFormat[0].url);
     urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
     ctx.redirect(urlToRedirect)
   } catch (error) {
