@@ -19,12 +19,12 @@
   },
   "homepage": "https://github.com/unixfox/invidious-stripped-down#readme",
   "dependencies": {
-    "@keyv/compress-brotli": "^1.1.2",
+    "@keyv/compress-brotli": "^1.1.3",
     "@koa/router": "^12.0.0",
     "keyv": "^4.5.2",
-    "koa": "^2.14.1",
+    "koa": "^2.14.2",
     "quick-lru": "^6.1.1",
-    "youtubei.js": "^3.1.1",
-    "undici": "^5.20.0"
+    "youtubei.js": "^4.3.0",
+    "undici": "^5.21.2"
   }
 }
