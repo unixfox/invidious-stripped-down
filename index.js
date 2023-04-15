@@ -49,7 +49,7 @@ async function getBasicVideoInfoDash(videoId) {
     basicVideoInfo.streaming_data.adaptive_formats = basicVideoInfo.streaming_data.adaptive_formats
       .filter(i => i.mime_type.includes("audio/mp4" | "video/mp4"));
 
-    basicVideoInfo.streaming_data.dashFile = basicVideoInfo.toDash((url) => {
+    basicVideoInfo.streaming_data.dashFile = await basicVideoInfo.toDash((url) => {
       url.host = url.host.split('.').slice(0, -2).join('.') + hostproxy;
       return url;
     });
