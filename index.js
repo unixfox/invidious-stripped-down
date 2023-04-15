@@ -18,9 +18,9 @@ const hostname = process.env.HOST_PROXY;
 const hostproxy = ".c." + hostname;
 const hmac_key = process.env.HMAC_KEY;
 
-const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000 });
-const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { store: lru });
 const timeExpireCache = 1000 * 60 * 60 * 1;
+const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000, maxAge: timeExpireCache });
+const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { store: lru });
 
 async function getBasicVideoInfoDash(videoId) {
   const keyvKey = videoId + "-dash";
