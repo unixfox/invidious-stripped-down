@@ -98,7 +98,7 @@ async function getBasicVideoInfoLatestVersion(videoId) {
   return basicVideoInfo;
 }
 
-router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
+router.get('/api/manifest/dash/id/:videoId', async (ctx) => {
   const videoId = ctx.params.videoId;
   ctx.set("access-control-allow-origin", "*");
 
@@ -112,7 +112,7 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfoDash(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason)
+      throw (new Error("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason))
     }
     ctx.set("content-type", "application/dash+xml");
     ctx.body = basicVideoInfo.streaming_data.dashFile;
@@ -122,7 +122,7 @@ router.get('/api/manifest/dash/id/:videoId', async (ctx, next) => {
   }
 });
 
-router.get('/api/manifest/hls_variant/(.*)', async (ctx, next) => {
+router.get('/api/manifest/hls_variant/(.*)', async (ctx) => {
   ctx.set("access-control-allow-origin", "*");
   ctx.set("content-type", "application/x-mpegURL");
 
@@ -144,7 +144,7 @@ router.get('/api/manifest/hls_variant/(.*)', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfoLatestVersion(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason)
+      throw (new Error("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason))
     }
 
     const hlsManifestUrl = basicVideoInfo.streaming_data.hls_manifest_url;
@@ -194,7 +194,7 @@ router.get('/api/manifest/hls_playlist/(.*)', async (ctx, next) => {
   }
 });
 
-router.get('/latest_version', async (ctx, next) => {
+router.get('/latest_version', async (ctx) => {
   const videoId = ctx.query.id;
   const itagId = ctx.query.itag;
   ctx.set("access-control-allow-origin", "*");
@@ -213,7 +213,7 @@ router.get('/latest_version', async (ctx, next) => {
   try {
     const basicVideoInfo = await getBasicVideoInfoLatestVersion(videoId);
     if (basicVideoInfo.playability_status.status !== "OK") {
-      throw ("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason);
+      throw (new Error("The video can't be played: " + videoId + " due to reason: " + basicVideoInfo.playability_status.reason));
     }
     const streamingData = basicVideoInfo.streaming_data;
     const availableFormats = streamingData.formats.concat(streamingData.adaptive_formats);
@@ -223,7 +223,7 @@ router.get('/latest_version', async (ctx, next) => {
       return ctx.body = "No itag found.";
     }
     if (!selectedItagFormat[0].url) {
-      throw ("No URL, the video can't be played: " + videoId);
+      throw (new Error("No URL, the video can't be played: " + videoId));
     }
     let urlToRedirect = new URL(selectedItagFormat[0].url);
     urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
@@ -239,4 +239,20 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
-app.listen(process.env.BIND_PORT || "3000", process.env.BIND_ADDRESS || "0.0.0.0");
+let bindAddress = process.env.BIND_ADDRESS || "0.0.0.0";
+let bindPort = process.env.BIND_PORT || "3000";
+
+const server = app.listen(bindPort, bindAddress, () => {
+  console.log(`Started proxy server on ${bindAddress}:${bindPort}`);
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT. Shutting down gracefully...');
+  server.close(err => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+});
