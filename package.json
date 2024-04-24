@@ -22,9 +22,9 @@
     "@keyv/compress-brotli": "^1.1.6",
     "@koa/router": "^12.0.1",
     "keyv": "^4.5.4",
-    "koa": "^2.15.2",
+    "koa": "^2.15.3",
     "quick-lru": "^7.0.0",
-    "youtubei.js": "^9.2.0",
-    "undici": "^6.10.2"
+    "youtubei.js": "^9.3.0",
+    "undici": "^6.14.1"
   }
 }
