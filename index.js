@@ -236,7 +236,9 @@ router.get('/latest_version', async (ctx, next) => {
       throw ("No URL, the video can't be played: " + videoId);
     }
     let urlToRedirect = new URL(selectedItagFormat[0].url);
-    urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
+    if (ctx.query.local) {
+      urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
+    }
     ctx.redirect(urlToRedirect)
   } catch (error) {
     console.log(error)
