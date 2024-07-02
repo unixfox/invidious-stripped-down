@@ -30,7 +30,7 @@ async function getBasicVideoInfoDash(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
@@ -38,15 +38,6 @@ async function getBasicVideoInfoDash(videoId) {
         reason: "Video unavailable: " + videoId
       }
     }, timeExpireCache);
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
-  }
-
-  // use WEB client if video not available found
-  if (basicVideoInfo.basic_info.id !== videoId) {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
-  }
-
-  if (basicVideoInfo.playability_status.reason) {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
   }
 
@@ -73,7 +64,7 @@ async function getBasicVideoInfoLatestVersion(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
@@ -81,15 +72,6 @@ async function getBasicVideoInfoLatestVersion(videoId) {
         reason: "Video unavailable: " + videoId
       }
     }, timeExpireCache);
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
-  }
-
-  // use WEB client if video not available found
-  if (basicVideoInfo.basic_info.id !== videoId) {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
-  }
-
-  if (basicVideoInfo.playability_status.reason) {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
   }
 
