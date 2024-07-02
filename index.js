@@ -78,8 +78,7 @@ async function getBasicVideoInfoLatestVersion(videoId) {
   if (basicVideoInfo.streaming_data) {
     let formats = [];
     for (let format of basicVideoInfo.streaming_data.formats) {
-      if (format.signature_cipher)
-        format.url = format.decipher(youtube.session.player)
+      format.url = format.decipher(youtube.session.player)
       formats.push(format);
     }
     basicVideoInfo.streaming_data.formats = formats;
