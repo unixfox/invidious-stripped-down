@@ -1,26 +1,25 @@
-import Koa from 'koa';
-import { Innertube } from 'youtubei.js';
-import Keyv from 'keyv';
+import Koa from 'npm:koa@2';
+import { Innertube } from 'https://deno.land/x/youtubei/deno.ts';
+import Keyv from 'npm:keyv@4';
 const app = new Koa();
-import Router from '@koa/router';
-import dns from 'dns';
-import KeyvBrotli from '@keyv/compress-brotli';
-import QuickLRU from 'quick-lru';
-import { request } from 'undici';
-import crypto from 'crypto';
+import Router from 'npm:@koa/router@12';
+import dns from 'node:dns';
+import QuickLRU from 'npm:quick-lru@7';
+import { request } from 'npm:undici@5';
+import crypto from 'node:crypto';
 
-dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
+dns.setDefaultResultOrder(Deno.env.DNS_ORDER || 'verbatim');
 
 const router = new Router();
 const youtube = await Innertube.create();
 
-const hostname = process.env.HOST_PROXY;
+const hostname = Deno.env.HOST_PROXY;
 const hostproxy = ".c." + hostname;
-const hmac_key = process.env.HMAC_KEY;
+const hmac_key = Deno.env.HMAC_KEY;
 
 const timeExpireCache = 1000 * 60 * 60 * 1;
-const lru = new QuickLRU({ maxSize: process.env.KEYV_MAX_SIZE || 5000, maxAge: timeExpireCache });
-const keyv = new Keyv(process.env.KEYV_ADDRESS || undefined, { store: lru });
+const lru = new QuickLRU({ maxSize: Deno.env.KEYV_MAX_SIZE || 5000, maxAge: timeExpireCache });
+const keyv = new Keyv(Deno.env.KEYV_ADDRESS || undefined, { store: lru });
 
 async function getBasicVideoInfoDash(videoId) {
   const keyvKey = videoId + "-dash";
@@ -30,7 +29,7 @@ async function getBasicVideoInfoDash(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
@@ -38,6 +37,10 @@ async function getBasicVideoInfoDash(videoId) {
         reason: "Video unavailable: " + videoId
       }
     }, timeExpireCache);
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+  }
+
+  if (basicVideoInfo.playability_status.reason) {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
   }
 
@@ -64,7 +67,7 @@ async function getBasicVideoInfoLatestVersion(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'ANDROID');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
@@ -72,13 +75,18 @@ async function getBasicVideoInfoLatestVersion(videoId) {
         reason: "Video unavailable: " + videoId
       }
     }, timeExpireCache);
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+  }
+
+  if (basicVideoInfo.playability_status.reason) {
     basicVideoInfo = await youtube.getBasicInfo(videoId, 'TV_EMBEDDED');
   }
 
   if (basicVideoInfo.streaming_data) {
     let formats = [];
     for (let format of basicVideoInfo.streaming_data.formats) {
-      format.url = format.decipher(youtube.session.player)
+      if (format.signature_cipher)
+        format.url = format.decipher(youtube.session.player)
       formats.push(format);
     }
     basicVideoInfo.streaming_data.formats = formats;
@@ -217,9 +225,7 @@ router.get('/latest_version', async (ctx, next) => {
       throw ("No URL, the video can't be played: " + videoId);
     }
     let urlToRedirect = new URL(selectedItagFormat[0].url);
-    if (ctx.query.local) {
-      urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
-    }
+    urlToRedirect.host = urlToRedirect.host.split('.').slice(0, -2).join('.') + hostproxy;
     ctx.redirect(urlToRedirect)
   } catch (error) {
     console.log(error)
@@ -232,4 +238,4 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
-app.listen(process.env.BIND_PORT || "3000", process.env.BIND_ADDRESS || "0.0.0.0");
+app.listen(Deno.env.BIND_PORT || "3000", Deno.env.BIND_ADDRESS || "0.0.0.0");
