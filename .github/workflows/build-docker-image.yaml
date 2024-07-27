@@ -39,4 +39,4 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: quay.io/unixfox/invidious-stripped-down:latest, quay.io/unixfox/invidious-stripped-down:master
+          tags: quay.io/unixfox/invidious-stripped-down:latest, quay.io/unixfox/invidious-stripped-down:main
