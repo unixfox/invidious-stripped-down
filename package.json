@@ -24,7 +24,7 @@
     "keyv": "^4.5.4",
     "koa": "^2.15.3",
     "quick-lru": "^7.0.0",
-    "youtubei.js": "^10.2.0",
-    "undici": "^6.19.4"
+    "undici": "^6.19.4",
+    "youtubei.js": "github:unixfox/YouTube.js"
   }
 }

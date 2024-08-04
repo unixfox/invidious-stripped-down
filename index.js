@@ -12,7 +12,7 @@ import crypto from 'crypto';
 dns.setDefaultResultOrder(process.env.DNS_ORDER || 'verbatim');
 
 const router = new Router();
-const youtube = await Innertube.create();
+const youtube = await Innertube.create({ po_token: (process.env.POTOKEN || ""), visitor_data: (process.env.VISITORDATA || "")});
 
 const hostname = process.env.HOST_PROXY;
 const hostproxy = ".c." + hostname;
