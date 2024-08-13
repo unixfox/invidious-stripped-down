@@ -25,6 +25,6 @@
     "koa": "^2.15.3",
     "quick-lru": "^7.0.0",
     "undici": "^6.19.4",
-    "youtubei.js": "github:unixfox/YouTube.js#po_token_option"
+    "youtubei.js": "^10.3.0"
   }
 }
