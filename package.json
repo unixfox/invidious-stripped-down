@@ -26,6 +26,6 @@
     "koa": "^2.15.3",
     "quick-lru": "^7.0.0",
     "undici": "^6.19.4",
-    "youtubei.js": "github:LuanRT/YouTube.js"
+    "youtubei.js": "github:unixfox/YouTube.js#web_creator_client"
   }
 }

@@ -36,7 +36,7 @@ async function getBasicVideoInfoDash(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB_CREATOR');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
@@ -70,7 +70,7 @@ async function getBasicVideoInfoLatestVersion(videoId) {
     return basicVideoInfo;
 
   try {
-    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB');
+    basicVideoInfo = await youtube.getBasicInfo(videoId, 'WEB_CREATOR');
   } catch (error) {
     await keyv.set(keyvKey, {
       playability_status: {
